@@ -26,9 +26,24 @@
    ▼
 [呈现层]        杂志社 × 印刷工坊：三刊并排 / 翻页器 / 跳过印章 / 工作日志
 ```
+### 🛠️ Agent 工作流实机拓扑
 
-- **关注点分离的解析内核**（`src/lib/parser.ts`）：把工作流的非结构化输出，收敛为强类型 `Variant → ChannelState → ShotState` 数据契约（见 `src/lib/types.ts`）。每变体、每渠道、每镜头均持有独立状态，翻页索引由 `activeIdxByKey` 按渠道维护，**绝不共享全局数组下标**。
-- **SSE 实时工作流编排**（`src/app/api/workflow/run/route.ts`）：后端 `ReadableStream` + 心跳保活（`: ping`，`cancel` 时 `clearInterval`），首帧立即发 `event: ready` 绕开网关 504；前端 `fetch().getReader()` 打字机式渲染节点进度，让「黑盒 Agent」的每一步都可见、可追溯。
+为了兼顾业务场景与工程严谨性，本项目底层 Agent 编排完全基于扣子（Coze）工作流引擎实现。工作流通过循环体处理新闻流，并采用「并行分发」架构生成多端内容：
+
+<p align="center">
+  <img src="./assets/coze-workflow.png" alt="Coze Agent Workflow" width="100%" style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);" />
+  <br />
+  <i>☝️ 扣子（Coze）Agent 编排工作流实机拓扑：包含新闻分析、知识库检索、三端并行生成与结果汇总</i>
+</p>
+
+> 💡 **关于工作流复现**：本项目底层 Agent 引擎基于扣子工作流驱动（`workflow_id=7708734514465439754`）。由于平台权限限制无法直接导出 JSON 包，但可完全参考上方截图与拓扑进行复刻：
+> 1. **输入解析**：通过 `top_news` 插件获取新闻流。
+> 2. **循环分析**：循环体内调用大模型（豆包 2.0-pro）进行新闻安全与需求分析，并结合商品知识库检索。
+> 3. **并行生成**：并行分发至「短视频制作」、「微博推荐文案」、「小红书图文」三个大模型节点。
+> 4. **结果汇总**：由「多平台发布结果汇总」节点收束，交由前端 SSE 流式解析内核处理。
+
+- **关注点分离的解析内核**（`src/lib/parser.ts`）：把工作流的非结构化输出，收敛为强类型 `Variant -> ChannelState -> ShotState` 数据契约（见 `src/lib/types.ts`）。每变体、每渠道、每镜头均持有独立状态，翻页索引由 `activeIdxByKey` 按渠道维护，**绝不共享全局数组下标**。
+- **SSE 实时工作流编排**（`src/app/api/workflow/run/route.ts`）：后端 `ReadableStream` + 心跳保活（`ping`，`cancel` 时 `clearInterval`），首帧立即发 `event: ready` 绕开网关 504；前端 `fetch().getReader()` 打字机式渲染节点进度，让「黑盒 Agent」的每一步都可见、可追溯。
 - **弹性降级设计**：真实 API 凭证不可用时，自动切换到确定性待签稿样本，并在工作日志与返回体（`source: placeholder`）如实标注——优雅降级，但绝不伪装成真实生成。
 
 ### 二、技术实现：把「工程严谨」写进细节
