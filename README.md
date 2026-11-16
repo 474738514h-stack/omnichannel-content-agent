@@ -31,7 +31,7 @@
 为了兼顾业务场景与工程严谨性，本项目底层 Agent 编排完全基于扣子（Coze）工作流引擎实现。工作流通过循环体处理新闻流，并采用「并行分发」架构生成多端内容：
 
 <p align="center">
-  <img src="./assets/coze-workflow.png" alt="Coze Agent Workflow" width="100%" style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);" />
+  <img src="./coze-workflow.png" alt="Coze Agent Workflow" width="100%" style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);" />
   <br />
   <i>☝️ 扣子（Coze）Agent 编排工作流实机拓扑：包含新闻分析、知识库检索、三端并行生成与结果汇总</i>
 </p>
